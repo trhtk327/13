@@ -1,0 +1,608 @@
+
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>מערכת חיפוש ולוח מודעות עם הגנת כתובת</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      direction: rtl;
+      background: linear-gradient(135deg, #1e1e2f, #3a3a60);
+      color: #fff;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 20px;
+      background: linear-gradient(45deg, #00c6ff, #0072ff);
+      box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+    }
+
+    .auth-container {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 5px;
+    }
+
+    .auth-container input, .auth-container button {
+      padding: 6px;
+      border-radius: 8px;
+      border: none;
+      width: 160px;
+      box-shadow: 0 0 6px #00f0ff;
+      margin-bottom: 5px;
+    }
+
+    .auth-container button {
+      background: #00d4ff;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .auth-container button:hover {
+      background: #00aaff;
+    }
+
+    .search-container {
+      display: flex;
+      justify-content: center;
+      margin: 20px 0;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    input[type="text"] {
+      padding: 12px;
+      width: 240px;
+      font-size: 18px;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+      box-shadow: 0 0 10px #00f0ff;
+    }
+
+    button {
+      padding: 12px 24px;
+      font-size: 18px;
+      border-radius: 10px;
+      background: #00d4ff;
+      color: #fff;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 0 12px #00ffff;
+    }
+
+    .section {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .section-title {
+      font-size: 24px;
+      text-align: center;
+      border-bottom: 2px solid #0ff;
+      margin: 30px 0 10px;
+    }
+
+    .flex-boxes {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .box {
+      flex: 1;
+      background: rgba(255,255,255,0.05);
+      padding: 20px;
+      border-radius: 12px;
+      position: relative;
+      min-height: 250px;
+      overflow-y: auto;
+    }
+
+    .box h3 {
+      margin-top: 0;
+      color: #0ff;
+      text-align: center;
+    }
+
+    .box ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .box li {
+      padding: 8px;
+      border-bottom: 1px solid #0ff;
+      cursor: pointer;
+    }
+
+    .box li:hover {
+      background: rgba(0,255,255,0.1);
+    }
+
+    .overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      font-weight: bold;
+      font-size: 20px;
+      z-index: 10;
+      color: #fff;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    /* כיוון הטקסט בלוח מודעות למרכז */
+    #bulletinBoard {
+      text-align: center;
+      font-weight: bold;
+      font-size: 20px;
+    }
+
+    #registerModal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    .register-content {
+      background: #222;
+      padding: 30px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 480px;
+      text-align: center;
+      box-shadow: 0 0 20px #00ffff;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      background: transparent;
+      border: none;
+      color: #0ff;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    iframe {
+      border: none;
+      width: 100%;
+      height: 600px;
+      border-radius: 8px;
+      margin-top: 15px;
+    }
+
+    /* Virus alert screen */
+    #virusScreen {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: #ff0000;
+      color: yellow;
+      font-weight: bold;
+      font-size: 26px;
+      z-index: 99999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      animation: flashBg 0.6s infinite;
+    }
+
+    @keyframes flashBg {
+      0% { background-color: #800000; }
+      50% { background-color: #ff0000; }
+      100% { background-color: #800000; }
+    }
+
+    .virus-message {
+      margin: 10px;
+      padding: 20px;
+      border: 3px solid yellow;
+      border-radius: 15px;
+      box-shadow: 0 0 15px yellow;
+      max-width: 700px;
+      text-align: center;
+    }
+
+    .virus-popup {
+      position: fixed;
+      top: 20%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ff2222;
+      color: yellow;
+      border: 3px solid yellow;
+      padding: 15px;
+      margin: 5px 0;
+      font-weight: bold;
+      box-shadow: 0 0 10px yellow;
+      animation: jump 1s ease-in-out infinite alternate;
+      cursor: default;
+      z-index: 100000;
+      max-width: 500px;
+      user-select: none;
+    }
+
+    @keyframes jump {
+      0% { transform: translateX(-50%) translateY(0); }
+      100% { transform: translateX(-50%) translateY(-20px); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>מערכת חיפוש ולוח מודעות</h1>
+  <div class="auth-container" id="authSection">
+    <input type="text" id="loginInput" placeholder="הכנס קוד התחברות">
+    <button onclick="login()">התחבר</button>
+    <button onclick="showRegister()">הירשם</button>
+  </div>
+  <div id="loggedInMsg" style="display:none; font-weight: bold; color:#0f0;">
+    התחברת בהצלחה 
+    <button onclick="logout()">התנתק</button>
+  </div>
+</header>
+
+<div class="search-container">
+  <input type="text" id="numberInput" placeholder="הזן מספר...">
+  <button onclick="searchNumber()">חפש</button>
+</div>
+
+<div class="section" id="searchResult"></div>
+
+<div class="section">
+  <div class="section-title">לוח מודעות</div>
+  <div id="bulletinBoard"></div>
+</div>
+
+<div class="section flex-boxes">
+  <div class="box" id="cardsBox">
+    <h3>רשימת כרטיסים</h3>
+    <ul id="cardsList"></ul>
+  </div>
+
+  <div class="box" id="guidesBox">
+    <h3 id="guidesTitle" style="display:none;">רשימת מדריכים</h3>
+    <div class="overlay" id="guideOverlay">כדי להגיע לשירות זה יש להתחבר</div>
+    <ul id="guidesList"></ul>
+  </div>
+</div>
+
+<!-- טופס הרשמה קופץ -->
+<div id="registerModal">
+  <div class="register-content" id="registerContent">
+    <button class="close-btn" onclick="closeRegister()">&times;</button>
+    <h2 style="color:#0ff;">הרשמה</h2>
+    <!-- הטופס המוטמע ישירות כאן -->
+    <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSfmiEcFk0MtafxjoL29gdedbjYblEsEbe4Hgh-BdKr5T5XW9w/viewform?usp=header" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>
+  </div>
+</div>
+
+<!-- מסך אזהרת וירוס -->
+<div id="virusScreen" style="display:none; flex;">
+  <div class="virus-message" id="virusMainMsg">
+    ⚠️ זוהתה גישה בלתי מורשית<br><br>
+    🛑 קובץ מסוכן אותר: <b>trojan_simulator.zip</b><br><br>
+    🕷️ המערכת עלולה להידבק<br>
+    ❗ הסריקה תתחיל אוטומטית<br><br>
+    ⏳ מנסה להסיר את האיום...
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+  // הגנת כתובת אתר
+ (function(){
+  const allowedURL = "https://trhtk327.github.io";
+  if (!location.href.startsWith(allowedURL)) {
+      // הפעלת המסך האדום
+      const virusScreen = document.getElementById('virusScreen');
+      virusScreen.style.display = 'flex';
+
+      // ניגון צליל דרמטי
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      function playBeep(freq, duration) {
+        const osc = audioCtx.createOscillator();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        osc.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration/1000);
+      }
+
+      // הצגת הודעות קופצות רבות וגלילה אוטומטית
+      let alertCount = 0;
+      function showVirusPopup() {
+        if (alertCount > 15) return;
+        alertCount++;
+        const popup = document.createElement('div');
+        popup.classList.add('virus-popup');
+        popup.textContent = `אזהרת וירוס! (${alertCount})`;
+        document.body.appendChild(popup);
+
+        setTimeout(() => {
+          popup.remove();
+        }, 2500);
+
+        playBeep(400 + alertCount * 20, 300);
+        setTimeout(showVirusPopup, 400);
+      }
+      showVirusPopup();
+
+      // הורדת קובץ מזויף (zip) עם תוכן טקסט
+      function triggerDownload() {
+        const zip = new JSZip();
+        const text = "העתקת הקוד אסורה ומהווה עבירה פלילית";
+        zip.file("trojan_simulator.txt", text);
+        zip.generateAsync({type:"blob"})
+          .then(function(content) {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(content);
+            link.download = "trojan_simulator.zip";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          });
+      }
+      setTimeout(triggerDownload, 4000);
+
+      // עצירת טעינת שאר הקוד ומניעת פעולה רגילה
+      document.body.innerHTML = '';
+      document.body.appendChild(virusScreen);
+      virusScreen.style.display = 'flex';
+
+      // עצירת כל האירועים שעלולים להפריע
+      window.addEventListener('keydown', e => e.preventDefault(), {capture:true});
+      window.addEventListener('contextmenu', e => e.preventDefault(), {capture:true});
+      window.addEventListener('selectstart', e => e.preventDefault(), {capture:true});
+      window.addEventListener('dragstart', e => e.preventDefault(), {capture:true});
+
+      return;
+    }
+  })();
+
+  // אם הגענו לכאן, אז הכתובת תקינה והקוד ממשיך כרגיל:
+
+ let loginCode = ""; // נאתחל ריק
+
+// בפונקציה שמטענת את מצב השליטה מהגיליון
+fetch("https://opensheet.elk.sh/1xjw6TNroKthB65uDB7TKkXBuK9ig4zIE8MVvL-t1zJY/Sheet1")
+  .then(res => res.json())
+  .then(data => {
+    // כאן לוקחים את הסיסמה מתא מסוים, למשל מהשורה השנייה או השלישית בגיליון
+    if (data.length > 1) {
+      loginCode = data[1]["מצב"].trim(); // או התא המתאים לסיסמה
+    }
+
+    // שאר הקוד שמעדכן מצב שליטה
+    applyControlState();
+  });
+
+  const isLogged = localStorage.getItem("isLogged") === "true";
+
+  if (isLogged) enableLogin();
+
+  function login() {
+    const code = document.getElementById("loginInput").value.trim();
+    if (code === loginCode) {
+      localStorage.setItem("isLogged", "true");
+      enableLogin();
+    } else {
+      alert("קוד שגוי");
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem("isLogged");
+    location.reload();
+  }
+
+  function enableLogin() {
+    document.getElementById("authSection").style.display = "none";
+    document.getElementById("loggedInMsg").style.display = "block";
+    document.getElementById("guideOverlay").style.display = "none";
+    document.getElementById("guidesTitle").style.display = "block";
+  }
+
+  function showRegister() {
+    document.getElementById("registerModal").style.display = "flex";
+  }
+
+  function closeRegister() {
+    document.getElementById("registerModal").style.display = "none";
+  }
+
+  function handleListClick(num) {
+    if (!localStorage.getItem("isLogged")) {
+      alert("כדי להשתמש בחיפוש מהיר יש להתחבר");
+      return;
+    }
+    document.getElementById("numberInput").value = num;
+    searchNumber();
+  }
+
+  function searchNumber() {
+    const input = document.getElementById("numberInput").value.trim();
+    const container = document.getElementById("searchResult");
+    container.innerHTML = "";
+
+    if (!input) {
+      container.innerHTML = "<div class='not-found'>יש להזין מספר</div>";
+      return;
+    }
+
+    fetch("https://opensheet.elk.sh/1IFbNl1UsasYHaMruQ12juF-Tm7w4M9aFRLnlqfJGcN8/Sheet1")
+      .then(res => res.json())
+      .then(data => {
+        const found = data.find(row => (row["מספר"] || "").trim() === input);
+        if (found) {
+          container.innerHTML = 
+            `<div class="card">
+              <h3>${found["שם"] || "ללא שם"}</h3>
+              <p><strong>מספר:</strong> ${found["מספר"]}</p>
+              <p><strong>תיאור:</strong> ${found["תיאור"] || "אין תיאור"}</p>
+              <p><strong>קישור:</strong> <a href="${found["קישור"]}" target="_blank" style="color:#0ff;">מעבר לקישור</a></p>
+            </div>`;
+        } else {
+          container.innerHTML = "<div class='not-found'>המספר לא קיים</div>";
+        }
+      });
+  }
+
+  fetch("https://opensheet.elk.sh/1sAudQaP0K5022vMBA01DxWRn0NTyio7YhJG6STvc7gQ/Sheet1")
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("bulletinBoard").innerHTML = data.map(row =>
+        `<div class="message" style="color:${row["צבע"] || "#fff"}; font-size:${row["גודל"] || "20px"};">${row["הודעה"] || ""}</div>`
+      ).join("");
+    });
+
+  fetch("https://opensheet.elk.sh/1JLtCgDp-VUGN13ZNIxZDhjZgCs6Dqd6RhvdThG6IP1I/Sheet1")
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("cardsList").innerHTML = data.map(row =>
+        `<li ondblclick="showRegister()" onclick="handleListClick('${row["מספר"]}')">${row["שם"]} – ${row["מספר"]}</li>`
+      ).join("");
+    });
+
+  fetch("https://opensheet.elk.sh/1dXeX8EFfK11d6H3d6JQDRzVV5jhkX5nG6x7uTEhx7Ck/Sheet1")
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("guidesList").innerHTML = data.map(row =>
+        `<li><a href="${row["קישור"]}" target="_blank" style="color:#0ff;">${row["שם"]}</a></li>`
+      ).join("");
+    });
+</script>
+<!-- כפתורי ווצאפ -->
+<div class="section">
+  <div style="display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; margin-top: 40px;">
+    <div style="text-align: center;">
+      <div style="margin-bottom: 8px;">לקבוצת הווצאפ</div>
+      <a href="https://chat.whatsapp.com/LiYzAeGc4Zw7fVJYvFyQtC" target="_blank" style="text-decoration: none;">
+        <img src="https://img.icons8.com/color/96/000000/whatsapp--v1.png" alt="וואטסאפ" style="width: 70px; height: 70px;">
+      </a>
+    </div>
+    <div style="text-align: center;">
+      <div style="margin-bottom: 8px;">אם יש תקלה באתר לחצן כאן</div>
+      <a href="https://wa.me/972552516961?text=שלום%20אני%20הגעתי%20מהאתר%20שלך%20ואני%20רוצה%20לדווח%20על%20תקלה%20והתקלה%20היא%3A" target="_blank" style="text-decoration: none;">
+        <img src="https://img.icons8.com/color/96/000000/whatsapp--v1.png" alt="וואטסאפ" style="width: 70px; height: 70px;">
+      </a>
+    </div>
+    <div style="text-align: center;">
+      <div style="margin-bottom: 8px;">לערוץ בווצאפ</div>
+      <a href="https://whatsapp.com/channel/0029VbARo06JJhzP9aaTaz0n" target="_blank" style="text-decoration: none;">
+        <img src="https://img.icons8.com/color/96/000000/whatsapp--v1.png" alt="וואטסאפ" style="width: 70px; height: 70px;">
+      </a>
+    </div>
+  </div>
+</div>
+<script>
+let מצב_שלט = "";
+
+function fetchControlState() {
+  fetch("https://opensheet.elk.sh/1xjw6TNroKthB65uDB7TKkXBuK9ig4zIE8MVvL-t1zJY/Sheet1")
+    .then(res => res.json())
+    .then(data => {
+      if (data && data[0] && data[0]["מצב"]) {
+        מצב_שלט = data[0]["מצב"].trim();
+        applyControlState();
+      }
+    })
+    .catch(e => {
+      console.error("שגיאה בטעינת מצב:", e);
+    });
+}
+
+function applyControlState() {
+  const isLogged = localStorage.getItem("isLogged") === "true";
+
+  switch (מצב_שלט) {
+    case "חסימה כללית":
+      document.body.innerHTML = `
+        <div style="color: red; font-size: 30px; text-align: center; margin-top: 50px;">
+          האתר נחסם זמנית על ידי המנהל
+        </div>
+      `;
+      break;
+
+    case "ניתוק":
+      if (isLogged) {
+        localStorage.removeItem("isLogged");
+        alert("נותקת על ידי המנהל.");
+        location.reload();
+      }
+      break;
+
+    case "הקפאה":
+      if (isLogged) {
+        const msg = document.getElementById("loggedInMsg");
+        if (msg && !msg.innerHTML.includes("קפוא")) {
+          msg.innerHTML += " <span style='color:orange;'>(מצב קפוא)</span>";
+        }
+        document.querySelector("#loggedInMsg button").disabled = true;
+      } else {
+        document.getElementById("loginInput").disabled = true;
+        document.querySelector("#authSection button[onclick='login()']").disabled = true;
+      }
+      break;
+
+    case "חסימת התחברות":
+      if (isLogged) {
+        localStorage.removeItem("isLogged");
+        alert("התחברותך בוטלה על ידי המנהל.");
+        location.reload();
+      } else {
+        document.getElementById("loginInput").disabled = true;
+        document.querySelector("#authSection button[onclick='login()']").disabled = true;
+      }
+      break;
+
+    default:
+      // לא רשום מצב – חופש פעולה
+      if (!isLogged) {
+        document.getElementById("loginInput").disabled = false;
+        document.querySelector("#authSection button[onclick='login()']").disabled = false;
+      }
+      if (isLogged) {
+        document.querySelector("#loggedInMsg button").disabled = false;
+      }
+      break;
+  }
+}
+
+fetchControlState();
+setInterval(fetchControlState, 30000);
+</script>
+
+
+</body>
+</html>
